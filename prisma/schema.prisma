@@ -1,0 +1,125 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"  // ← TO THIS
+  url      = env("DATABASE_URL")
+}
+
+model MenuItem {
+  id            String    @id @default(cuid())
+  name          String
+  description   String
+  price         Decimal   @db.Decimal(10, 2)
+  orderItems    OrderItem[]
+  category      String
+  imageUrl      String?
+  isFeatured    Boolean   @default(false)
+  isVegetarian  Boolean   @default(false)
+  isSpicy       Boolean   @default(false)
+  isAvailable   Boolean   @default(true)
+  order         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("menu_items")
+}
+
+model Reservation {
+  id              String    @id @default(cuid())
+  date            DateTime
+  time            String
+  guests          Int
+  name            String
+  email           String
+  phone           String
+  specialRequests String?
+  status          ReservationStatus @default(PENDING)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([date, time])
+  @@map("reservations")
+}
+
+model Order {
+  id              String    @id @default(cuid())
+  orderNumber     String    @unique
+  orderType       OrderType
+  status          OrderStatus @default(PENDING)
+  pickupTime      String?
+  reservationDate DateTime?
+  reservationTime String?
+  subtotal        Decimal   @db.Decimal(10, 2)
+  tax             Decimal   @db.Decimal(10, 2)
+  total           Decimal   @db.Decimal(10, 2)
+  name            String
+  email           String
+  phone           String
+  specialRequests String?
+  items           OrderItem[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String    @id @default(cuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id])
+  menuItemId  String
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id])
+  quantity    Int
+  price       Decimal   @db.Decimal(10, 2)
+  specialInstructions String?
+  createdAt   DateTime  @default(now())
+  
+  @@map("order_items")
+}
+
+model ContactMessage {
+  id          String    @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  subject     String
+  message     String
+  status      ContactStatus @default(UNREAD)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("contact_messages")
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderType {
+  PICKUP
+  DINE_IN
+}
+
+enum ContactStatus {
+  UNREAD
+  READ
+  RESPONDED
+  ARCHIVED
+}
