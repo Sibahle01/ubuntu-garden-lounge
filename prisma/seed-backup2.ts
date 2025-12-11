@@ -8,7 +8,7 @@ async function main() {
 
   try {
     // Clear existing menu items
-    await prisma.menuItem.deleteMany()
+    await prisma.menu_items.deleteMany()
     console.log('Cleared menu items')
     
     // Create menu items
@@ -23,24 +23,35 @@ async function main() {
         isVegetarian: true,
         isSpicy: true,
         order: 1
+      },
+      {
+        name: 'Chakalaka Dip',
+        description: 'Spicy vegetable relish served with warm bread',
+        price: 75.00,
+        category: 'APPETIZERS',
+        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&auto=format',
+        isFeatured: false,
+        isVegetarian: true,
+        isSpicy: true,
+        order: 2
       }
     ]
     
     for (const item of menuItems) {
-      await prisma.menuItem.create({ data: item })
+      await prisma.menu_items.create({ data: item })
     }
     
-    console.log(`Seeded ${menuItems.length} menu items`)
+    console.log(\Seeded \ menu items\)
 
     // Check if admin exists
-    const existingAdmin = await prisma.adminUser.findFirst({
+    const existingAdmin = await prisma.admin_users.findFirst({
       where: { email: 'admin@ubuntugarden.co.za' }
     })
 
     if (!existingAdmin) {
       const hashedPassword = await hash('Ubuntu2024!', 10)
       
-      await prisma.adminUser.create({
+      await prisma.admin_users.create({
         data: {
           email: 'admin@ubuntugarden.co.za',
           password: hashedPassword,
@@ -50,8 +61,6 @@ async function main() {
       })
       
       console.log('Admin user created')
-      console.log('Email: admin@ubuntugarden.co.za')
-      console.log('Password: Ubuntu2024!')
     } else {
       console.log('Admin user already exists')
     }
@@ -70,5 +79,5 @@ main()
     process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect()
+    await prisma.\()
   })
