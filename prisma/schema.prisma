@@ -7,7 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// MODELS ONLY - no comments, no extra stuff
+// MODELS ONLY
+
 model MenuItem {
   id            String    @id @default(cuid())
   name          String
@@ -39,17 +40,17 @@ model AdminUser {
   @@map("admin_users")
 }
 
-// Keep other models simple for now
+// Updated Reservation model using the requested field names
 model Reservation {
   id              String    @id @default(cuid())
-  date            DateTime
-  time            String
-  guests          Int
-  name            String
-  email           String
-  phone           String
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  reservationDate DateTime // Using DateTime for the date field
+  partySize       Int      @map("guests") // Re-mapping 'guests' from the existing schema to 'partySize'
+  time            String   // Retaining 'time' from the existing schema
   specialRequests String?
-  status          String    @default("PENDING")
+  status          String    @default("PENDING") 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   

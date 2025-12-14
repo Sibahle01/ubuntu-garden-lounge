@@ -5,7 +5,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clear-menu": "tsx scripts/clear-menu.ts"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,7 @@
     "@tailwindcss/line-clamp": "^0.4.4",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.3",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.344.0",
     "next": "^14.1.0",
@@ -30,6 +32,11 @@
     "postcss": "^8.4.38",
     "prisma": "^6.0.0",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "5.9.3"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

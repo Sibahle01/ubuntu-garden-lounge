@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation'; // Added useRouter
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Users, Phone, Mail, User, MessageSquare, CheckCircle, AlertCircle, MapPin, Info, ShoppingBag } from 'lucide-react'; // Added ShoppingBag
+import { Calendar, Clock, Users, Phone, Mail, User, MessageSquare, CheckCircle, AlertCircle, MapPin, Info, ShoppingBag } from 'lucide-react';
 import { KentePattern, AdinkraPattern, ZigzagPattern } from '@/components/patterns/AfricanPatterns';
-import { useCart } from '@/contexts/CartContext'; // Added useCart hook
+import { useCart } from '@/contexts/CartContext';
 
 // Real-world table configuration
 const TABLE_CAPACITY = {
@@ -17,10 +17,10 @@ const TABLE_CAPACITY = {
 };
 
 export default function ReservationsPage() {
-  const router = useRouter(); // Initialize router for redirection
+  const router = useRouter();
   const searchParams = useSearchParams();
   const fromCart = searchParams.get('fromCart') === 'true';
-  const { items, setOrderType } = useCart(); // Destructure what's needed from cart context
+  const { items, setOrderType } = useCart();
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -40,14 +40,12 @@ export default function ReservationsPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
-  // --- Cart Integration Effect ---
-  // When coming from cart with dine-in items, set to dine-in mode
+  // Cart Integration Effect
   useEffect(() => {
     if (fromCart && items.length > 0) {
       setOrderType('dine-in');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromCart, items.length]); // setOrderType is not strictly needed as it's stable, but kept the original dependency list logic
+  }, [fromCart, items.length]);
 
   // Get minimum bookable date (today + 2 hours)
   const getMinDate = () => {
@@ -113,12 +111,39 @@ export default function ReservationsPage() {
     
     setIsChecking(true);
     
-    // Simulate booking
-    setTimeout(() => {
-      console.log('Reservation data:', formData);
+    try {
+      // Send reservation to your API
+      const response = await fetch('/api/reservations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.phone,
+          reservationDate: formData.date,
+          time: formData.time,
+          partySize: formData.guests,
+          specialRequests: formData.specialRequests || '',
+          occasion: formData.occasion || '',
+        }),
+      });
+
+      if (response.ok) {
+        const reservation = await response.json();
+        console.log('Reservation created:', reservation);
+        setIsSubmitted(true);
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to create reservation'}`);
+      }
+    } catch (error) {
+      console.error('Reservation error:', error);
+      alert('Failed to create reservation. Please try again.');
+    } finally {
       setIsChecking(false);
-      setIsSubmitted(true);
-    }, 2000);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -127,7 +152,6 @@ export default function ReservationsPage() {
 
   // Success screen
   if (isSubmitted) {
-    // --- START: MODIFIED SUCCESS SCREEN ---
     const primaryActionButton = fromCart && items.length > 0 ? (
       <button
         onClick={() => router.push('/checkout?fromReservation=true')}
@@ -247,7 +271,7 @@ export default function ReservationsPage() {
                 </ul>
               </div>
               
-              {/* Primary action button (Conditional: Checkout or Another Reservation) */}
+              {/* Primary action button */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {primaryActionButton}
                 
@@ -267,12 +291,11 @@ export default function ReservationsPage() {
         </div>
       </div>
     );
-    // --- END: MODIFIED SUCCESS SCREEN ---
   }
 
   return (
     <div className="min-h-screen bg-cream pb-24">
-      {/* Hero with African patterns - starts at top, no gap */}
+      {/* Hero with African patterns */}
       <div className="relative bg-gradient-to-br from-forest via-forest-dark to-forest text-white pt-24 pb-12 md:pt-28 md:pb-16 mb-12">
         <div className="absolute top-0 left-0 right-0">
           <AdinkraPattern className="w-full h-12 text-gold/20" />
@@ -330,7 +353,7 @@ export default function ReservationsPage() {
                   exit={{ opacity: 0, x: 20 }}
                   className="bg-white rounded-3xl shadow-xl p-6 md:p-8"
                 >
-                  {/* --- START: CART NOTIFICATION --- */}
+                  {/* Cart notification */}
                   {fromCart && items.length > 0 && (
                     <div className="mb-6 p-4 bg-gold/10 rounded-xl border border-gold/20">
                       <div className="flex items-start gap-3">
@@ -338,14 +361,13 @@ export default function ReservationsPage() {
                         <div>
                           <p className="font-medium text-forest">Dine-in Order Ready</p>
                           <p className="text-sm text-charcoal-light mt-1">
-                            You have **{items.length} item{items.length > 1 ? 's' : ''}** in your cart. 
+                            You have {items.length} item{items.length > 1 ? 's' : ''} in your cart. 
                             After booking your table, you'll proceed to checkout to confirm your pre-order.
                           </p>
                         </div>
                       </div>
                     </div>
                   )}
-                  {/* --- END: CART NOTIFICATION --- */}
 
                   <div className="mb-6">
                     <KentePattern className="w-full h-2 text-forest mb-6" />

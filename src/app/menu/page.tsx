@@ -1,4 +1,4 @@
-// src/app/menu/page.tsx - FINAL UPDATED WITH REAL API DATA AND ENHANCED IMAGE HANDLING
+// src/app/menu/page.tsx - UPDATED WITH PROPER IMAGE URL HANDLING
 'use client';
 
 import MenuHero from '@/components/sections/MenuHero';
@@ -8,7 +8,7 @@ import { ShoppingCart, Star, Flame, Leaf } from 'lucide-react';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 
-// Updated interface to match your Prisma schema (assuming price is handled as string)
+// Updated interface to match your Prisma schema
 interface MenuItem {
   id: string;
   name: string;
@@ -16,7 +16,7 @@ interface MenuItem {
   price: string; // Comes as string from API (Decimal type)
   category: string; // To match your DB (e.g., 'APPETIZERS')
   imageUrl?: string; // To match your DB
-  isFeatured: boolean; // Changed from isPopular
+  isFeatured: boolean;
   isSpicy: boolean;
   isVegetarian: boolean;
   isAvailable: boolean;
@@ -30,10 +30,15 @@ interface MenuItem {
 // Map your database categories to frontend categories
 const categoryMap: Record<string, string> = {
   'APPETIZERS': 'starters',
+  'APPETIZER': 'starters',
   'MAIN_COURSES': 'mains',
+  'MAIN_COURSE': 'mains',
   'DESSERTS': 'desserts',
+  'DESSERT': 'desserts',
   'DRINKS': 'drinks',
-  'PLATTERS': 'platters', // Added potential future category
+  'DRINK': 'drinks',
+  'PLATTERS': 'platters',
+  'PLATTER': 'platters',
 };
 
 const categories = [
@@ -57,22 +62,39 @@ const formatPrice = (price: string) => {
 // Fallback images using Unsplash URLs based on category
 const categoryFallbackImages: Record<string, string> = {
   'APPETIZERS': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop&auto=format',
+  'APPETIZER': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop&auto=format',
   'MAIN_COURSES': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop&auto=format',
+  'MAIN_COURSE': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop&auto=format',
   'DESSERTS': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop&auto=format',
+  'DESSERT': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop&auto=format',
   'DRINKS': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop&auto=format',
-  // Generic fallback if all else fails
-  'DEFAULT': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&auto=format', 
+  'DRINK': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop&auto=format',
+  'DEFAULT': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&auto=format',
 };
 
-// Enhanced image helper with fallbacks
+// Enhanced image helper with proper local/remote handling
 const getImageUrl = (item: MenuItem): string => {
-  // 1. If we have a valid external URL, use it
-  if (item.imageUrl && item.imageUrl.startsWith('http')) {
-    return item.imageUrl;
+  // 1. If we have an imageUrl from database
+  if (item.imageUrl) {
+    // Check if it's a full URL (http/https)
+    if (item.imageUrl.startsWith('http')) {
+      return item.imageUrl;
+    }
+    
+    // Check if it already starts with /uploads/
+    if (item.imageUrl.startsWith('/uploads/')) {
+      return item.imageUrl;
+    }
+    
+    // Assume it's a filename, prepend the upload path
+    // Your upload API saves to: /uploads/menu/filename.jpg
+    return `/uploads/menu/${item.imageUrl}`;
   }
   
-  // 2. Use a category-based Unsplash URL as a fallback
-  return categoryFallbackImages[item.category] || categoryFallbackImages['DEFAULT'];
+  // 2. Use a category-based fallback
+  // Handle both singular and plural forms
+  const fallbackCategory = item.category.endsWith('S') ? item.category : `${item.category}S`;
+  return categoryFallbackImages[item.category] || categoryFallbackImages[fallbackCategory] || categoryFallbackImages['DEFAULT'];
 };
 
 
@@ -88,7 +110,6 @@ export default function MenuPage() {
     const fetchMenuItems = async () => {
       try {
         setLoading(true);
-        // Use relative path since this is a client component calling an internal API route
         const response = await fetch('/api/menu'); 
         
         if (!response.ok) {
@@ -110,7 +131,6 @@ export default function MenuPage() {
 
   // Transform database category to frontend category
   const getFrontendCategory = (dbCategory: string): string => {
-    // Falls back to 'mains' or 'all' if category is not mapped, though 'all' won't break the filter
     return categoryMap[dbCategory] || dbCategory.toLowerCase(); 
   };
 
@@ -124,8 +144,8 @@ export default function MenuPage() {
       id: item.id,
       name: item.name,
       description: item.description,
-      price: parseFloat(item.price), // Convert string to number
-      imageUrl: getImageUrl(item), // Use the new image helper
+      price: parseFloat(item.price),
+      imageUrl: getImageUrl(item),
       category: getFrontendCategory(item.category),
     });
   };
@@ -234,13 +254,12 @@ export default function MenuPage() {
                   </div>
 
                   <Image
-                    // --- UPDATED IMAGE SRC AND ALT ---
                     src={getImageUrl(item)}
                     alt={`${item.name} - Ubuntu Garden Lounge`}
                     fill
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="object-cover transition-transform duration-500 hover:scale-105"
-                    priority={index < 4} // Prioritize loading first 4 images
+                    priority={index < 4}
                   />
                 </div>
 

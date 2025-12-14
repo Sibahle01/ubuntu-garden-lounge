@@ -2,10 +2,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import MobileNavigation from "@/components/layout/MobileNavigation";
-import Footer from "@/components/layout/Footer";
 import { CartProvider } from "@/contexts/CartContext";
-import CartSidebar from "@/components/cart/CartSidebar";
+import LayoutContent from "@/components/layout/LayoutContent";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,13 +20,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-cream`}>
-        <CartProvider> {/* WRAP EVERYTHING */}
-          <MobileNavigation />
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Footer />
-          <CartSidebar />
+        <CartProvider>
+          <LayoutContent>{children}</LayoutContent>
         </CartProvider>
       </body>
     </html>

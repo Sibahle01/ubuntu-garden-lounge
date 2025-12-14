@@ -1,3 +1,4 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -12,10 +13,12 @@ const nextConfig = {
         hostname: 'plus.unsplash.com',
         pathname: '/**',
       },
-      // Add more if needed
     ],
+    // Add this for local images in development
+    domains: ['localhost'],
+    // Or uncomment this line for development:
+    // unoptimized: true, // Disable image optimization for local images
   },
-  // ... rest of your config
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

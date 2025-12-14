@@ -1,24 +1,26 @@
 // src/app/api/menu/[id]/route.ts
-import { prisma } from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
 
+const prisma = new PrismaClient()
+
+// GET - Fetch single menu item
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
-    console.log('Fetching menu item ID:', id) // Add this for debugging
-    
-    const menuItem = await prisma.menuItem.findUnique({ 
-      where: { id }
+    const menuItem = await prisma.menuItem.findUnique({
+      where: { id: params.id }
     })
-    
+
     if (!menuItem) {
-      console.log('Menu item not found:', id)
-      return NextResponse.json({ error: 'Menu item not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Menu item not found' },
+        { status: 404 }
+      )
     }
-    
+
     return NextResponse.json(menuItem)
   } catch (error) {
     console.error('Error fetching menu item:', error)
@@ -26,83 +28,119 @@ export async function GET(
       { error: 'Failed to fetch menu item' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
-export async function PUT(
-  request: NextRequest,
+// PATCH - Update menu item (partial update)
+export async function PATCH(
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
-    const data = await request.json()
-
-    // Validate required fields
-    if (!data.name || !data.description || !data.price || !data.category) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    const body = await request.json()
+    
+    // Convert price to string if it exists in the update
+    if (body.price !== undefined) {
+      body.price = body.price.toString()
     }
 
-    const updatedItem = await prisma.menuItem.update({
-      where: { id },
-      data: {
-        name: data.name,
-        description: data.description,
-        // Convert price to float before saving to Decimal field in Prisma
-        price: parseFloat(data.price), 
-        category: data.category,
-        imageUrl: data.imageUrl || null,
-        // Set default to true if isAvailable is not provided (shouldn't happen on PUT, but good safeguard)
-        isAvailable: data.isAvailable !== undefined ? data.isAvailable : true 
-      }
+    const menuItem = await prisma.menuItem.update({
+      where: { id: params.id },
+      data: body
     })
 
-    return NextResponse.json(updatedItem)
+    return NextResponse.json(menuItem)
   } catch (error) {
     console.error('Error updating menu item:', error)
     return NextResponse.json(
       { error: 'Failed to update menu item' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
-// --- NEW DELETE HANDLER ---
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }) {
+// PUT - Replace menu item (full update)
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params
+    const body = await request.json()
     
-    // Check if the item exists before attempting to delete (optional, but handles 404 cleanly)
-    const existingItem = await prisma.menuItem.findUnique({
-      where: { id }
-    });
+    const {
+      name,
+      description,
+      price,
+      category,
+      imageUrl,
+      isSpicy = false,
+      isVegetarian = false,
+      isAvailable = true,
+      isFeatured = false,
+      order = 0
+    } = body
 
-    if (!existingItem) {
-      return NextResponse.json({ error: 'Menu item not found' }, { status: 404 });
+    // Validate required fields
+    if (!name || !description || !price || !category) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
     }
-    
-    // Perform the deletion
-    await prisma.menuItem.delete({
-      where: { id }
+
+    const menuItem = await prisma.menuItem.update({
+      where: { id: params.id },
+      data: {
+        name,
+        description,
+        price: price.toString(),
+        category,
+        imageUrl: imageUrl || null,
+        isSpicy,
+        isVegetarian,
+        isAvailable,
+        isFeatured,
+        order
+      }
     })
-    
-    // Return a 200 OK or 204 No Content response for successful deletion
-    return NextResponse.json({ success: true }, { status: 200 })
-    // NOTE: A status 204 (No Content) is often preferred for successful DELETE operations 
-    // where no body content is expected in the response.
-    // return new NextResponse(null, { status: 204 }); 
 
+    return NextResponse.json(menuItem)
   } catch (error) {
-    // Check if the error indicates a record not found or similar issue (e.g., in Prisma)
-    console.error('Error deleting menu item:', error)
+    console.error('Error updating menu item:', error)
+    return NextResponse.json(
+      { error: 'Failed to update menu item' },
+      { status: 500 }
+    )
+  } finally {
+    await prisma.$disconnect()
+  }
+}
 
+// DELETE - Delete menu item
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await prisma.menuItem.delete({
+      where: { id: params.id }
+    })
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Menu item deleted successfully' 
+    })
+  } catch (error) {
+    console.error('Error deleting menu item:', error)
     return NextResponse.json(
       { error: 'Failed to delete menu item' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }

@@ -1,4 +1,4 @@
-// src/components/sections/FeaturedMenu.tsx - UPDATED WITH CART CONTEXT
+// src/components/sections/FeaturedMenu.tsx - FULLY DYNAMIC FROM DATABASE
 'use client';
 
 import { motion } from 'framer-motion';
@@ -6,19 +6,25 @@ import { ChevronRight, Utensils, GlassWater, Salad, Cake } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCart } from '@/contexts/CartContext'; // Import CartContext
+import { useCart } from '@/contexts/CartContext';
+import Image from 'next/image';
 
 // Professional icon components for categories
 const CategoryIcon = ({ name }: { name: string }) => {
   switch (name.toLowerCase()) {
     case 'platters':
+    case 'platter':
       return <Utensils size={24} className="text-forest" />;
     case 'cocktails':
     case 'drinks':
+    case 'drink':
       return <GlassWater size={24} className="text-forest" />;
     case 'starters':
+    case 'appetizers':
+    case 'appetizer':
       return <Salad size={24} className="text-forest" />;
     case 'desserts':
+    case 'dessert':
       return <Cake size={24} className="text-forest" />;
     default:
       return <Utensils size={24} className="text-forest" />;
@@ -35,7 +41,6 @@ const getFallbackGradient = (index: number) => {
   return gradients[index % gradients.length];
 };
 
-// UPDATED: Function to get a cleaner, more subtle background pattern style
 const getSectionPatternStyle = (patternIndex: number): CSSProperties => {
   const patternStyle: CSSProperties = {
     backgroundColor: '#f5f5dc',
@@ -64,56 +69,114 @@ const getSectionPatternStyle = (patternIndex: number): CSSProperties => {
 interface FeaturedItem {
   id: string;
   name: string;
-  price: number; // Changed to number
-  image: string;
-  badge?: string;
-  category: 'platters' | 'starters' | 'mains' | 'desserts' | 'drinks';
+  price: number;
+  imageUrl: string | null;
+  category: string;
   description: string;
+  isFeatured: boolean;
 }
 
-export default function FeaturedMenu() {
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
-  const router = useRouter();
-  const { addItem } = useCart(); // Use CartContext
+// Category mapping
+const categoryMap: Record<string, string> = {
+  'APPETIZERS': 'starters',
+  'APPETIZER': 'starters',
+  'MAIN_COURSES': 'mains',
+  'MAIN_COURSE': 'mains',
+  'DESSERTS': 'desserts',
+  'DESSERT': 'desserts',
+  'DRINKS': 'drinks',
+  'DRINK': 'drinks',
+  'PLATTERS': 'platters',
+  'PLATTER': 'platters',
+};
 
-  const featuredItems: FeaturedItem[] = [
-    {
-      id: 'platter-1',
-      name: 'Ubuntu Fusion Platter',
-      price: 285.00,
-      image: '/images/menu/fusion-platter.jpg',
-      badge: 'BEST SELLER',
-      category: 'platters',
-      description: 'A celebration of African flavors with grilled meats, chakalaka, and pap'
-    },
-    {
-      id: 'platter-2',
-      name: 'Sea & Flame Platter',
-      price: 350.00,
-      image: '/images/menu/sea-flame.jpg',
-      badge: 'NEW',
-      category: 'platters',
-      description: 'Fresh prawns, calamari, and line fish with our signature peri-peri sauce'
-    },
-    {
-      id: 'platter-3',
-      name: 'Royal Ubuntu Feast',
-      price: 480.00,
-      image: '/images/menu/royal-feast.jpg',
-      category: 'platters',
-      description: 'Premium sharing platter with lamb chops, boerewors, and sides'
+// Fallback images
+const categoryFallbackImages: Record<string, string> = {
+  'APPETIZERS': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop',
+  'APPETIZER': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop',
+  'MAIN_COURSES': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop',
+  'MAIN_COURSE': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop',
+  'DESSERTS': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop',
+  'DESSERT': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop',
+  'DRINKS': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop',
+  'DRINK': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop',
+  'PLATTERS': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop',
+  'PLATTER': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop',
+  'DEFAULT': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
+};
+
+// Get image URL helper
+const getImageUrl = (item: FeaturedItem): string => {
+  if (item.imageUrl) {
+    if (item.imageUrl.startsWith('http')) {
+      return item.imageUrl;
     }
-  ];
+    if (item.imageUrl.startsWith('/uploads/')) {
+      return item.imageUrl;
+    }
+    return `/uploads/menu/${item.imageUrl}`;
+  }
+  
+  const fallbackCategory = item.category.endsWith('S') ? item.category : `${item.category}S`;
+  return categoryFallbackImages[item.category] || categoryFallbackImages[fallbackCategory] || categoryFallbackImages['DEFAULT'];
+};
+
+export default function FeaturedMenu() {
+  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categoryCount, setCategoryCount] = useState<Record<string, number>>({});
+  const router = useRouter();
+  const { addItem } = useCart();
 
   const categories = [
-    { name: 'Platters', count: 8, id: 'platters' },
-    { name: 'Cocktails', count: 12, id: 'drinks' },
-    { name: 'Starters', count: 6, id: 'starters' },
-    { name: 'Desserts', count: 5, id: 'desserts' }
+    { name: 'Platters', id: 'platters' },
+    { name: 'Cocktails', id: 'drinks' },
+    { name: 'Starters', id: 'starters' },
+    { name: 'Desserts', id: 'desserts' }
   ];
 
-  // Navigation handlers
+  // Fetch featured items and category counts from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/menu');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch menu items');
+        }
+        
+        const data = await response.json();
+        
+        // Filter only featured items and convert price to number
+        const featured = data
+          .filter((item: any) => item.isFeatured && item.isAvailable)
+          .map((item: any) => ({
+            ...item,
+            price: parseFloat(item.price)
+          }))
+          .slice(0, 6); // Limit to 6 items
+        
+        setFeaturedItems(featured);
+
+        // Calculate category counts
+        const counts: Record<string, number> = {};
+        data.forEach((item: any) => {
+          const frontendCategory = getFrontendCategory(item.category);
+          counts[frontendCategory] = (counts[frontendCategory] || 0) + 1;
+        });
+        setCategoryCount(counts);
+        
+      } catch (error) {
+        console.error('Error fetching menu data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const handleViewMenuClick = () => {
     router.push('/menu');
   };
@@ -122,14 +185,18 @@ export default function FeaturedMenu() {
     router.push(`/menu?category=${categoryId}`);
   };
 
+  const getFrontendCategory = (dbCategory: string): string => {
+    return categoryMap[dbCategory] || dbCategory.toLowerCase();
+  };
+
   const handleAddToCart = (item: FeaturedItem) => {
     addItem({
       id: item.id,
       name: item.name,
       description: item.description,
       price: item.price,
-      imageUrl: item.image,
-      category: item.category,
+      imageUrl: getImageUrl(item),
+      category: getFrontendCategory(item.category),
     });
   };
 
@@ -139,50 +206,6 @@ export default function FeaturedMenu() {
       currency: 'ZAR',
       minimumFractionDigits: 2,
     }).format(price);
-  };
-
-  // Preload images
-  useEffect(() => {
-    featuredItems.forEach((item) => {
-      const img = new Image();
-      img.src = item.image;
-      img.onload = () => {
-        setLoadedImages(prev => ({ ...prev, [item.id]: true }));
-      };
-      img.onerror = () => {
-        console.warn(`Failed to load image: ${item.image}`);
-        setFailedImages(prev => ({ ...prev, [item.id]: true }));
-        setLoadedImages(prev => ({ ...prev, [item.id]: true }));
-      };
-    });
-  }, []);
-
-  // Get image style for an item
-  const getImageStyle = (item: FeaturedItem, index: number): CSSProperties => {
-    const isLoaded = loadedImages[item.id];
-    const hasFailed = failedImages[item.id];
-    
-    if (!isLoaded) {
-      return { 
-        backgroundImage: 'linear-gradient(135deg, #1a4d2e 0%, #1a4d2e 100%)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      };
-    }
-    
-    if (hasFailed) {
-      return { 
-        backgroundImage: getFallbackGradient(index),
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      };
-    }
-    
-    return { 
-      backgroundImage: `url(${item.image})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    };
   };
 
   return (
@@ -225,7 +248,9 @@ export default function FeaturedMenu() {
                     <CategoryIcon name={cat.name} />
                   </div>
                   <div className="text-sm font-semibold text-forest text-center">{cat.name}</div>
-                  <div className="text-xs text-charcoal-light text-center">{cat.count} items</div>
+                  <div className="text-xs text-charcoal-light text-center">
+                    {categoryCount[cat.id] || 0} items
+                  </div>
                 </motion.button>
               ))}
             </div>
@@ -246,138 +271,119 @@ export default function FeaturedMenu() {
                     <CategoryIcon name={cat.name} />
                   </div>
                   <div className="text-base font-semibold text-forest text-center">{cat.name}</div>
-                  <div className="text-sm text-charcoal-light text-center">{cat.count} items</div>
+                  <div className="text-sm text-charcoal-light text-center">
+                    {categoryCount[cat.id] || 0} items
+                  </div>
                 </motion.button>
               ))}
             </div>
           </div>
 
           {/* Featured Items */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-forest">Signature Dishes</h3>
-              <button
-                onClick={handleViewMenuClick}
-                className="text-sm text-gold font-semibold flex items-center gap-1 active:scale-95"
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto"></div>
+              <p className="mt-4 text-charcoal">Loading signature dishes...</p>
+            </div>
+          ) : featuredItems.length > 0 ? (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-forest">Signature Dishes</h3>
+                <button
+                  onClick={handleViewMenuClick}
+                  className="text-sm text-gold font-semibold flex items-center gap-1 active:scale-95"
+                >
+                  See All
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Mobile: Horizontal Scroll */}
+              <div 
+                className="md:hidden flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 touch-pan-x"
+                style={{ WebkitOverflowScrolling: 'touch' } as CSSProperties}
               >
-                See All
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            {/* Mobile: Horizontal Scroll */}
-            <div 
-              className="md:hidden flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 touch-pan-x"
-              style={{ WebkitOverflowScrolling: 'touch' } as CSSProperties}
-            >
-              {featuredItems.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.15 }}
-                  className="flex-shrink-0 snap-center w-[280px] sm:w-[320px] bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all active:scale-95"
-                >
-                  <div 
-                    className="relative h-48 transition-opacity duration-500"
-                    style={{
-                      ...getImageStyle(item, index),
-                      opacity: loadedImages[item.id] ? 1 : 0.5,
-                    } as CSSProperties}
+                {featuredItems.map((item, index) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.15 }}
+                    className="flex-shrink-0 snap-center w-[280px] sm:w-[320px] bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all active:scale-95"
                   >
-                    {!loadedImages[item.id] && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-forest/20 to-gold/20 animate-pulse" />
-                    )}
-                    
-                    {item.badge && (
-                      <div className="absolute top-3 left-3 bg-gold text-forest text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                        {item.badge}
-                      </div>
-                    )}
-                    
-                    {failedImages[item.id] && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-forest/30 to-gold/30">
-                        <div className="text-white text-center p-4">
-                          <div className="text-lg font-semibold mb-1">{item.name.split(' ')[0]}</div>
-                          <div className="text-sm opacity-80">Image Coming Soon</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h4 className="font-bold text-lg text-forest mb-2 leading-tight">
-                      {item.name}
-                    </h4>
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-gold">{formatPrice(item.price)}</span>
-                      <button 
-                        onClick={() => handleAddToCart(item)}
-                        className="bg-gold hover:bg-gold-light text-forest font-bold w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all active:scale-90 shadow-md"
-                        aria-label={`Add ${item.name} to order`}
-                      >
-                        +
-                      </button>
+                    <div className="relative h-48 bg-gradient-to-br from-forest/10 to-gold/10">
+                      <Image
+                        src={getImageUrl(item)}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="320px"
+                      />
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                    <div className="p-4">
+                      <h4 className="font-bold text-lg text-forest mb-2 leading-tight line-clamp-2">
+                        {item.name}
+                      </h4>
+                      <p className="text-sm text-charcoal-light mb-3 line-clamp-2">
+                        {item.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold text-gold">{formatPrice(item.price)}</span>
+                        <button 
+                          onClick={() => handleAddToCart(item)}
+                          className="bg-gold hover:bg-gold-light text-forest font-bold w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all active:scale-90 shadow-md"
+                          aria-label={`Add ${item.name} to order`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
 
-            {/* Desktop: Grid Layout */}
-            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredItems.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.15 }}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 duration-300"
-                >
-                  <div 
-                    className="relative h-56 transition-opacity duration-500"
-                    style={{
-                      ...getImageStyle(item, index),
-                      opacity: loadedImages[item.id] ? 1 : 0.5,
-                    } as CSSProperties}
+              {/* Desktop: Grid Layout */}
+              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {featuredItems.map((item, index) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.15 }}
+                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 duration-300"
                   >
-                    {!loadedImages[item.id] && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-forest/20 to-gold/20 animate-pulse" />
-                    )}
-                    
-                    {item.badge && (
-                      <div className="absolute top-3 left-3 bg-gold text-forest text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                        {item.badge}
-                      </div>
-                    )}
-                    
-                    {failedImages[item.id] && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-forest/30 to-gold/30">
-                        <div className="text-white text-center p-4">
-                          <div className="text-xl font-semibold mb-1">{item.name.split(' ')[0]}</div>
-                          <div className="text-sm opacity-80">Professional Photo Coming Soon</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h4 className="font-bold text-xl text-forest mb-3 leading-tight">
-                      {item.name}
-                    </h4>
-                    <div className="flex items-center justify-between">
-                      <span className="text-3xl font-bold text-gold">{formatPrice(item.price)}</span>
-                      <button 
-                        onClick={() => handleAddToCart(item)}
-                        className="bg-gold hover:bg-gold-light text-forest font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90 shadow-md"
-                        aria-label={`Add ${item.name} to order`}
-                      >
-                        +
-                      </button>
+                    <div className="relative h-56 bg-gradient-to-br from-forest/10 to-gold/10">
+                      <Image
+                        src={getImageUrl(item)}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="p-5">
+                      <h4 className="font-bold text-xl text-forest mb-2 leading-tight line-clamp-2">
+                        {item.name}
+                      </h4>
+                      <p className="text-sm text-charcoal-light mb-3 line-clamp-2">
+                        {item.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-3xl font-bold text-gold">{formatPrice(item.price)}</span>
+                        <button 
+                          onClick={() => handleAddToCart(item)}
+                          className="bg-gold hover:bg-gold-light text-forest font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90 shadow-md"
+                          aria-label={`Add ${item.name} to order`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           {/* View Full Menu CTA */}
           <div className="mt-8 text-center">

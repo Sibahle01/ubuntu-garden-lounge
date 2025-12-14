@@ -1,4 +1,4 @@
-// src/app/checkout/page.tsx - COMPLETELY REDESIGNED
+// src/app/checkout/page.tsx - COMPLETELY REDESIGNED WITH API INTEGRATION
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -92,16 +92,62 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
 
-    // Generate order number
-    const newOrderNumber = `UB-${Date.now().toString().slice(-6)}`;
-    setOrderNumber(newOrderNumber);
+    try {
+      // Generate order number
+      const newOrderNumber = `UB-${Date.now().toString().slice(-6)}`;
+      setOrderNumber(newOrderNumber);
 
-    // Simulate payment processing
-    setTimeout(() => {
+      // Create order data for API
+      const orderData = {
+        orderNumber: newOrderNumber,
+        orderType: orderType, // 'dine-in' or 'pickup'
+        status: 'PENDING',
+        subtotal: subtotal,
+        tax: tax,
+        total: total,
+        name: customerInfo.name,
+        email: customerInfo.email,
+        phone: customerInfo.phone,
+        specialRequests: customerInfo.specialInstructions || null,
+        // Include reservation info for dine-in orders
+        reservationDate: orderType === 'dine-in' ? selectedDate : null,
+        reservationTime: orderType === 'dine-in' ? selectedTime : null,
+        pickupTime: orderType === 'pickup' ? pickupTime : null,
+        items: items.map(item => ({
+          menuItemId: item.id, // Ensure cart items have the database menuItem.id
+          quantity: item.quantity,
+          price: item.price,
+          specialInstructions: item.specialInstructions || '',
+        })),
+      };
+
+      // Send order to API
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to create order');
+      }
+
+      const createdOrder = await response.json();
+      console.log('Order created successfully:', createdOrder);
+
+      // Show confirmation and clear cart
       setIsProcessing(false);
       setShowConfirmation(true);
       clearCart();
-    }, 2000);
+
+    } catch (error) {
+      console.error('Error creating order:', error);
+      alert(error instanceof Error ? error.message : 'Failed to create order. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
