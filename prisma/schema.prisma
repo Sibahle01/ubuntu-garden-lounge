@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
 }
 
 // MODELS ONLY
@@ -47,8 +47,8 @@ model Reservation {
   customerEmail   String
   customerPhone   String?
   reservationDate DateTime // Using DateTime for the date field
-  partySize       Int      @map("guests") // Re-mapping 'guests' from the existing schema to 'partySize'
-  time            String   // Retaining 'time' from the existing schema
+  partySize       Int       @map("guests") // Re-mapping 'guests' from the existing schema to 'partySize'
+  time            String    // Retaining 'time' from the existing schema
   specialRequests String?
   status          String    @default("PENDING") 
   createdAt       DateTime  @default(now())
@@ -88,4 +88,17 @@ model OrderItem {
   createdAt             DateTime @default(now())
   
   @@map("order_items")
+}
+
+// NEW GALLERY IMAGE MODEL
+model GalleryImage {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  imageUrl    String
+  category    String   // 'ambiance', 'food', 'events', 'people', etc.
+  isVisible   Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
