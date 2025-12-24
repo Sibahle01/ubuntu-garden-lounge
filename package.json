@@ -1,12 +1,14 @@
 {
   "name": "ubuntu-garden-lounge",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "clear-menu": "tsx scripts/clear-menu.ts"
+    "clear-menu": "tsx scripts/clear-menu.ts",
+    "prebuild": "rm -rf .next"
   },
   "keywords": [],
   "author": "",
