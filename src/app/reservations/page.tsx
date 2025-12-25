@@ -1,6 +1,7 @@
 // src/app/reservations/page.tsx
 'use client';
 
+import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,15 +9,8 @@ import { Calendar, Clock, Users, Phone, Mail, User, MessageSquare, CheckCircle, 
 import { KentePattern, AdinkraPattern, ZigzagPattern } from '@/components/patterns/AfricanPatterns';
 import { useCart } from '@/contexts/CartContext';
 
-// Real-world table configuration
-const TABLE_CAPACITY = {
-  small: { min: 1, max: 2, available: 8 },
-  medium: { min: 3, max: 4, available: 12 },
-  large: { min: 5, max: 6, available: 6 },
-  xlarge: { min: 7, max: 12, available: 3 }
-};
-
-export default function ReservationsPage() {
+// Create a separate component for the form that uses useSearchParams
+function ReservationForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromCart = searchParams.get('fromCart') === 'true';
@@ -657,5 +651,19 @@ export default function ReservationsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main page component
+export default function ReservationsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-forest font-medium">Loading reservation system...</p>
+      </div>
+    </div>}>
+      <ReservationForm />
+    </Suspense>
   );
 }
