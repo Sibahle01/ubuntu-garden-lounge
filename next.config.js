@@ -13,16 +13,9 @@ const nextConfig = {
         hostname: 'plus.unsplash.com',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'vkhphzilbpyxrfnstyhp.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
     ],
-    // Add this for local images in development
-    domains: ['localhost'],
-    // Or uncomment this line for development:
-    // unoptimized: true, // Disable image optimization for local images
+    // This disables optimization for images from your own domain
+    unoptimized: true,
   },
 };
 
