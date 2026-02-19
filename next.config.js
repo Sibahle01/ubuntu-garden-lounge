@@ -13,6 +13,11 @@ const nextConfig = {
         hostname: 'plus.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'vkhphzilbpyxrfnstyhp.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
     // Add this for local images in development
     domains: ['localhost'],
