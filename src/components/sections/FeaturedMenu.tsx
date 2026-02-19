@@ -1,13 +1,47 @@
-// src/components/sections/FeaturedMenu.tsx - FULLY DYNAMIC FROM DATABASE
+// src/components/sections/FeaturedMenu.tsx - FIXED ORDER
 'use client';
 
 import { motion } from 'framer-motion';
 import { ChevronRight, Utensils, GlassWater, Salad, Cake } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import Image from 'next/image';
+
+// Your local images from public/images/menu/
+const featuredItems = [
+  {
+    id: '1',
+    name: 'Bunny Chow',
+    description: 'Traditional South African curry served in a hollowed-out bread loaf',
+    price: 120.00,
+    category: 'MAIN_COURSES',
+    imageUrl: '/images/menu/bunny-chow.jpg',
+    isFeatured: true,
+    isAvailable: true
+  },
+  {
+    id: '3',
+    name: 'Pap en Wors',
+    description: 'Maize meal porridge with grilled sausage and tomato relish',
+    price: 85.00,
+    category: 'MAIN_COURSES',
+    imageUrl: '/images/menu/pap-en-wors.jpg',
+    isFeatured: true,
+    isAvailable: true
+  },
+  {
+    id: '5',
+    name: 'Malva Pudding',
+    description: 'Classic South African dessert with creamy custard',
+    price: 70.00,
+    category: 'DESSERTS',
+    imageUrl: '/images/menu/malva.jpg',
+    isFeatured: true,
+    isAvailable: true
+  },
+];
 
 // Professional icon components for categories
 const CategoryIcon = ({ name }: { name: string }) => {
@@ -66,22 +100,16 @@ const getSectionPatternStyle = (patternIndex: number): CSSProperties => {
   };
 };
 
-interface FeaturedItem {
-  id: string;
-  name: string;
-  price: number;
-  imageUrl: string | null;
-  category: string;
-  description: string;
-  isFeatured: boolean;
-}
-
-// Category mapping
+// Category mapping - MOVED UP BEFORE IT'S USED
 const categoryMap: Record<string, string> = {
   'APPETIZERS': 'starters',
   'APPETIZER': 'starters',
+  'STARTERS': 'starters',
+  'STARTER': 'starters',
   'MAIN_COURSES': 'mains',
   'MAIN_COURSE': 'mains',
+  'MAINS': 'mains',
+  'MAIN': 'mains',
   'DESSERTS': 'desserts',
   'DESSERT': 'desserts',
   'DRINKS': 'drinks',
@@ -90,41 +118,12 @@ const categoryMap: Record<string, string> = {
   'PLATTER': 'platters',
 };
 
-// Fallback images
-const categoryFallbackImages: Record<string, string> = {
-  'APPETIZERS': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop',
-  'APPETIZER': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop',
-  'MAIN_COURSES': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop',
-  'MAIN_COURSE': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop',
-  'DESSERTS': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop',
-  'DESSERT': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop',
-  'DRINKS': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop',
-  'DRINK': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop',
-  'PLATTERS': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop',
-  'PLATTER': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop',
-  'DEFAULT': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
-};
-
-// Get image URL helper
-const getImageUrl = (item: FeaturedItem): string => {
-  if (item.imageUrl) {
-    if (item.imageUrl.startsWith('http')) {
-      return item.imageUrl;
-    }
-    if (item.imageUrl.startsWith('/uploads/')) {
-      return item.imageUrl;
-    }
-    return `/uploads/menu/${item.imageUrl}`;
-  }
-  
-  const fallbackCategory = item.category.endsWith('S') ? item.category : `${item.category}S`;
-  return categoryFallbackImages[item.category] || categoryFallbackImages[fallbackCategory] || categoryFallbackImages['DEFAULT'];
+// Helper function - MOVED UP BEFORE IT'S USED
+const getFrontendCategory = (dbCategory: string): string => {
+  return categoryMap[dbCategory] || dbCategory.toLowerCase();
 };
 
 export default function FeaturedMenu() {
-  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [categoryCount, setCategoryCount] = useState<Record<string, number>>({});
   const router = useRouter();
   const { addItem } = useCart();
 
@@ -135,47 +134,13 @@ export default function FeaturedMenu() {
     { name: 'Desserts', id: 'desserts' }
   ];
 
-  // Fetch featured items and category counts from API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/menu');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch menu items');
-        }
-        
-        const data = await response.json();
-        
-        // Filter only featured items and convert price to number
-        const featured = data
-          .filter((item: any) => item.isFeatured && item.isAvailable)
-          .map((item: any) => ({
-            ...item,
-            price: parseFloat(item.price)
-          }))
-          .slice(0, 6); // Limit to 6 items
-        
-        setFeaturedItems(featured);
-
-        // Calculate category counts
-        const counts: Record<string, number> = {};
-        data.forEach((item: any) => {
-          const frontendCategory = getFrontendCategory(item.category);
-          counts[frontendCategory] = (counts[frontendCategory] || 0) + 1;
-        });
-        setCategoryCount(counts);
-        
-      } catch (error) {
-        console.error('Error fetching menu data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Calculate category counts from featured items
+  const categoryCount = categories.reduce((acc, cat) => {
+    const count = featuredItems.filter(item => 
+      getFrontendCategory(item.category) === cat.id
+    ).length;
+    return { ...acc, [cat.id]: count };
+  }, {} as Record<string, number>);
 
   const handleViewMenuClick = () => {
     router.push('/menu');
@@ -185,17 +150,13 @@ export default function FeaturedMenu() {
     router.push(`/menu?category=${categoryId}`);
   };
 
-  const getFrontendCategory = (dbCategory: string): string => {
-    return categoryMap[dbCategory] || dbCategory.toLowerCase();
-  };
-
-  const handleAddToCart = (item: FeaturedItem) => {
+  const handleAddToCart = (item: typeof featuredItems[0]) => {
     addItem({
       id: item.id,
       name: item.name,
       description: item.description,
       price: item.price,
-      imageUrl: getImageUrl(item),
+      imageUrl: item.imageUrl,
       category: getFrontendCategory(item.category),
     });
   };
@@ -280,110 +241,103 @@ export default function FeaturedMenu() {
           </div>
 
           {/* Featured Items */}
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto"></div>
-              <p className="mt-4 text-charcoal">Loading signature dishes...</p>
-            </div>
-          ) : featuredItems.length > 0 ? (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-forest">Signature Dishes</h3>
-                <button
-                  onClick={handleViewMenuClick}
-                  className="text-sm text-gold font-semibold flex items-center gap-1 active:scale-95"
-                >
-                  See All
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-
-              {/* Mobile: Horizontal Scroll */}
-              <div 
-                className="md:hidden flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 touch-pan-x"
-                style={{ WebkitOverflowScrolling: 'touch' } as CSSProperties}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-forest">Signature Dishes</h3>
+              <button
+                onClick={handleViewMenuClick}
+                className="text-sm text-gold font-semibold flex items-center gap-1 active:scale-95"
               >
-                {featuredItems.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.15 }}
-                    className="flex-shrink-0 snap-center w-[280px] sm:w-[320px] bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all active:scale-95"
-                  >
-                    <div className="relative h-48 bg-gradient-to-br from-forest/10 to-gold/10">
-                      <Image
-                        src={getImageUrl(item)}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                        sizes="320px"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-bold text-lg text-forest mb-2 leading-tight line-clamp-2">
-                        {item.name}
-                      </h4>
-                      <p className="text-sm text-charcoal-light mb-3 line-clamp-2">
-                        {item.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-gold">{formatPrice(item.price)}</span>
-                        <button 
-                          onClick={() => handleAddToCart(item)}
-                          className="bg-gold hover:bg-gold-light text-forest font-bold w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all active:scale-90 shadow-md"
-                          aria-label={`Add ${item.name} to order`}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Desktop: Grid Layout */}
-              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredItems.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.15 }}
-                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 duration-300"
-                  >
-                    <div className="relative h-56 bg-gradient-to-br from-forest/10 to-gold/10">
-                      <Image
-                        src={getImageUrl(item)}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                    </div>
-                    <div className="p-5">
-                      <h4 className="font-bold text-xl text-forest mb-2 leading-tight line-clamp-2">
-                        {item.name}
-                      </h4>
-                      <p className="text-sm text-charcoal-light mb-3 line-clamp-2">
-                        {item.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-3xl font-bold text-gold">{formatPrice(item.price)}</span>
-                        <button 
-                          onClick={() => handleAddToCart(item)}
-                          className="bg-gold hover:bg-gold-light text-forest font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90 shadow-md"
-                          aria-label={`Add ${item.name} to order`}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                See All
+                <ChevronRight size={16} />
+              </button>
             </div>
-          ) : null}
+
+            {/* Mobile: Horizontal Scroll */}
+            <div 
+              className="md:hidden flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 touch-pan-x"
+              style={{ WebkitOverflowScrolling: 'touch' } as CSSProperties}
+            >
+              {featuredItems.slice(0, 6).map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.15 }}
+                  className="flex-shrink-0 snap-center w-[280px] sm:w-[320px] bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all active:scale-95"
+                >
+                  <div className="relative h-48 bg-gradient-to-br from-forest/10 to-gold/10">
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="320px"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-bold text-lg text-forest mb-2 leading-tight line-clamp-2">
+                      {item.name}
+                    </h4>
+                    <p className="text-sm text-charcoal-light mb-3 line-clamp-2">
+                      {item.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-gold">{formatPrice(item.price)}</span>
+                      <button 
+                        onClick={() => handleAddToCart(item)}
+                        className="bg-gold hover:bg-gold-light text-forest font-bold w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all active:scale-90 shadow-md"
+                        aria-label={`Add ${item.name} to order`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Desktop: Grid Layout */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredItems.slice(0, 6).map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.15 }}
+                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 duration-300"
+                >
+                  <div className="relative h-56 bg-gradient-to-br from-forest/10 to-gold/10">
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <h4 className="font-bold text-xl text-forest mb-2 leading-tight line-clamp-2">
+                      {item.name}
+                    </h4>
+                    <p className="text-sm text-charcoal-light mb-3 line-clamp-2">
+                      {item.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-3xl font-bold text-gold">{formatPrice(item.price)}</span>
+                      <button 
+                        onClick={() => handleAddToCart(item)}
+                        className="bg-gold hover:bg-gold-light text-forest font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90 shadow-md"
+                        aria-label={`Add ${item.name} to order`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
 
           {/* View Full Menu CTA */}
           <div className="mt-8 text-center">
