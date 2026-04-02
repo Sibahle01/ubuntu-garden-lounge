@@ -1,105 +1,79 @@
-// src/app/api/upload/route.ts
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-// Only create client if keys exist
-const supabase = supabaseUrl && supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null
+﻿// src/app/api/upload/route.ts - Local file system version
+import { NextResponse } from "next/server";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+import { existsSync } from "fs";
 
 export async function POST(request: Request) {
   try {
-    // Check if Supabase is configured
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Storage not configured. Please add Supabase keys.' },
-        { status: 500 }
-      )
-    }
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
 
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    
     if (!file) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: "No file provided" },
         { status: 400 }
-      )
+      );
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only images are allowed.' },
+        { error: "Invalid file type. Only images are allowed." },
         { status: 400 }
-      )
+      );
     }
 
     // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 10MB.' },
+        { error: "File too large. Maximum size is 10MB." },
         { status: 400 }
-      )
+      );
     }
 
     // Create unique filename
-    const timestamp = Date.now()
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const filename = `${timestamp}-${originalName}`
-    const filePath = `gallery/${filename}` // Store in gallery folder
+    const timestamp = Date.now();
+    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const filename = timestamp + "-" + originalName;
 
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('uploads') // Make sure this bucket exists in Supabase
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: false
-      })
-
-    if (error) {
-      console.error('Supabase upload error:', error)
-      
-      // Check if bucket doesn't exist
-      if (error.message.includes('bucket')) {
-        return NextResponse.json(
-          { error: 'Storage bucket "uploads" not found. Please create it in Supabase.' },
-          { status: 500 }
-        )
-      }
-      
-      return NextResponse.json(
-        { error: 'Failed to upload to storage: ' + error.message },
-        { status: 500 }
-      )
+    // Determine upload directory based on file type
+    let uploadDir = "public/uploads";
+    const type = formData.get("type") || "general";
+    
+    if (type === "menu") {
+      uploadDir = "public/uploads/menu";
+    } else if (type === "gallery") {
+      uploadDir = "public/uploads/gallery";
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('uploads')
-      .getPublicUrl(data.path)
+    // Ensure directory exists
+    const fullPath = path.join(process.cwd(), uploadDir);
+    if (!existsSync(fullPath)) {
+      await mkdir(fullPath, { recursive: true });
+    }
+
+    // Save file
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const filePath = path.join(fullPath, filename);
+    await writeFile(filePath, buffer);
+
+    // Return the public URL
+    const publicUrl = "/" + uploadDir.replace("public/", "") + "/" + filename;
 
     return NextResponse.json({
       success: true,
       url: publicUrl,
-      filename: filename
-    })
-
+      filename: filename,
+    });
   } catch (error) {
-    console.error('Error uploading file:', error)
+    console.error("Error uploading file:", error);
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: "Failed to upload file" },
       { status: 500 }
-    )
+    );
   }
 }
