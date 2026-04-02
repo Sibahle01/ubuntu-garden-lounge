@@ -1,19 +1,50 @@
-// src/app/gallery/page.tsx - DYNAMIC FROM DATABASE
+// src/app/gallery/page.tsx - MODIFIED TO USE LOCAL IMAGES
 'use client';
 
 import { motion } from 'framer-motion';
 import { ChevronLeft, Instagram, Share2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 
-interface GalleryImage {
-  id: string;
-  title: string;
-  description: string | null;
-  imageUrl: string;
-  category: string;
-}
+// Hardcoded gallery images with your local images
+const galleryImages = [
+  {
+    id: '1',
+    title: 'Restaurant Interior',
+    description: 'Warm and inviting dining space at Ubuntu Garden',
+    imageUrl: '/images/gallery/culinary-art.jpg',
+    category: 'ambiance'
+  },
+  {
+    id: '2',
+    title: 'Outdoor Seating',
+    description: 'Enjoy your meal in our beautiful garden setting',
+    imageUrl: '/images/gallery/garden-dining.jpg',
+    category: 'ambiance'
+  },
+  {
+    id: '5',
+    title: 'Saturday Night Vibes',
+    description: 'Live music and great company',
+    imageUrl: '/images/gallery/sunset-views.jpg',
+    category: 'events'
+  },
+  {
+    id: '6',
+    title: 'Family Celebration',
+    description: 'Private event in our garden section',
+    imageUrl: '/images/gallery/live-music.jpg',
+    category: 'events'
+  },
+  {
+    id: '7',
+    title: 'Happy Customers',
+    description: 'Our guests enjoying their Ubuntu experience',
+    imageUrl: '/images/gallery/romentic-evening.jpg',
+    category: 'people'
+  },
+];
 
 const galleryCategories = [
   { id: 'all', name: 'All Photos' },
@@ -26,34 +57,11 @@ const galleryCategories = [
 export default function GalleryPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [images, setImages] = useState<GalleryImage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [selectedImage, setSelectedImage] = useState<typeof galleryImages[0] | null>(null);
   
-  useEffect(() => {
-    fetchImages();
-  }, []);
-
-  const fetchImages = async () => {
-    try {
-      setLoading(true);
-      // Only fetch visible images for public gallery
-      const response = await fetch('/api/gallery?visible=true');
-      
-      if (response.ok) {
-        const data = await response.json();
-        setImages(data);
-      }
-    } catch (error) {
-      console.error('Error fetching gallery:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filteredImages = selectedCategory === 'all' 
-    ? images 
-    : images.filter(img => img.category === selectedCategory);
+    ? galleryImages 
+    : galleryImages.filter(img => img.category === selectedCategory);
 
   return (
     <main className="min-h-screen bg-cream">
@@ -96,16 +104,8 @@ export default function GalleryPage() {
           ))}
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto"></div>
-            <p className="mt-4 text-charcoal">Loading gallery...</p>
-          </div>
-        )}
-
         {/* Photo Grid */}
-        {!loading && filteredImages.length > 0 && (
+        {filteredImages.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredImages.map((photo, index) => (
               <motion.div
@@ -134,10 +134,8 @@ export default function GalleryPage() {
               </motion.div>
             ))}
           </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && filteredImages.length === 0 && (
+        ) : (
+          /* Empty State */
           <div className="text-center py-12">
             <p className="text-charcoal-light text-lg">
               {selectedCategory === 'all' 
@@ -148,7 +146,7 @@ export default function GalleryPage() {
         )}
 
         {/* Social Media CTA */}
-        {!loading && images.length > 0 && (
+        {galleryImages.length > 0 && (
           <div className="mt-12 text-center">
             <div className="inline-flex items-center gap-2 bg-forest/10 text-forest px-6 py-3 rounded-full mb-4">
               <Instagram size={20} />

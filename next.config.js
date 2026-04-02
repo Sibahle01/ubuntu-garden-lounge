@@ -14,10 +14,8 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    // Add this for local images in development
-    domains: ['localhost'],
-    // Or uncomment this line for development:
-    // unoptimized: true, // Disable image optimization for local images
+    // This disables optimization for images from your own domain
+    unoptimized: true,
   },
 };
 

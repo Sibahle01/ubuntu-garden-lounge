@@ -1,29 +1,61 @@
-// src/app/menu/page.tsx - UPDATED WITH PROPER IMAGE URL HANDLING
+// src/app/menu/page.tsx - MODIFIED TO USE LOCAL IMAGES
 'use client';
 
 import MenuHero from '@/components/sections/MenuHero';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ShoppingCart, Star, Flame, Leaf } from 'lucide-react';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 
-// Updated interface to match your Prisma schema
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: string; // Comes as string from API (Decimal type)
-  category: string; // To match your DB (e.g., 'APPETIZERS')
-  imageUrl?: string; // To match your DB
-  isFeatured: boolean;
-  isSpicy: boolean;
-  isVegetarian: boolean;
-  isAvailable: boolean;
-  order: number;
-  createdAt: string;
-  updatedAt: string;
-}
+// Hardcoded menu items with your local images
+const menuItems = [
+  {
+    id: '1',
+    name: 'Bunny Chow',
+    description: 'Traditional South African curry served in a hollowed-out bread loaf',
+    price: '120.00',
+    category: 'MAIN_COURSES',
+    imageUrl: '/images/menu/bunny-chow.jpg',
+    isFeatured: true,
+    isSpicy: true,
+    isVegetarian: false,
+    isAvailable: true,
+    order: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '3',
+    name: 'Pap en Wors',
+    description: 'Maize meal porridge with grilled sausage and tomato relish',
+    price: '85.00',
+    category: 'MAIN_COURSES',
+    imageUrl: '/images/menu/pap-en-wors.jpg',
+    isFeatured: true,
+    isSpicy: true,
+    isVegetarian: false,
+    isAvailable: true,
+    order: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '5',
+    name: 'Malva Pudding',
+    description: 'Classic South African dessert with creamy custard',
+    price: '70.00',
+    category: 'DESSERTS',
+    imageUrl: '/images/menu/malva.jpg',
+    isFeatured: true,
+    isSpicy: false,
+    isVegetarian: true,
+    isAvailable: true,
+    order: 5,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+];
 
 // --- CONFIGURATION ---
 
@@ -31,8 +63,12 @@ interface MenuItem {
 const categoryMap: Record<string, string> = {
   'APPETIZERS': 'starters',
   'APPETIZER': 'starters',
+  'STARTERS': 'starters',
+  'STARTER': 'starters',
   'MAIN_COURSES': 'mains',
   'MAIN_COURSE': 'mains',
+  'MAINS': 'mains',
+  'MAIN': 'mains',
   'DESSERTS': 'desserts',
   'DESSERT': 'desserts',
   'DRINKS': 'drinks',
@@ -59,131 +95,30 @@ const formatPrice = (price: string) => {
   }).format(priceNum);
 };
 
-// Fallback images using Unsplash URLs based on category
-const categoryFallbackImages: Record<string, string> = {
-  'APPETIZERS': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop&auto=format',
-  'APPETIZER': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=600&fit=crop&auto=format',
-  'MAIN_COURSES': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop&auto=format',
-  'MAIN_COURSE': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop&auto=format',
-  'DESSERTS': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop&auto=format',
-  'DESSERT': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&h=600&fit=crop&auto=format',
-  'DRINKS': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop&auto=format',
-  'DRINK': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop&auto=format',
-  'DEFAULT': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&auto=format',
+// Get frontend category
+const getFrontendCategory = (dbCategory: string): string => {
+  return categoryMap[dbCategory] || dbCategory.toLowerCase();
 };
-
-// Enhanced image helper with proper local/remote handling
-const getImageUrl = (item: MenuItem): string => {
-  // 1. If we have an imageUrl from database
-  if (item.imageUrl) {
-    // Check if it's a full URL (http/https)
-    if (item.imageUrl.startsWith('http')) {
-      return item.imageUrl;
-    }
-    
-    // Check if it already starts with /uploads/
-    if (item.imageUrl.startsWith('/uploads/')) {
-      return item.imageUrl;
-    }
-    
-    // Assume it's a filename, prepend the upload path
-    // Your upload API saves to: /uploads/menu/filename.jpg
-    return `/uploads/menu/${item.imageUrl}`;
-  }
-  
-  // 2. Use a category-based fallback
-  // Handle both singular and plural forms
-  const fallbackCategory = item.category.endsWith('S') ? item.category : `${item.category}S`;
-  return categoryFallbackImages[item.category] || categoryFallbackImages[fallbackCategory] || categoryFallbackImages['DEFAULT'];
-};
-
 
 export default function MenuPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { addItem, totalItems } = useCart();
-
-  // Fetch menu items from API
-  useEffect(() => {
-    const fetchMenuItems = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/menu'); 
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setMenuItems(data);
-      } catch (err) {
-        console.error('Error fetching menu items:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load menu');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMenuItems();
-  }, []);
-
-  // Transform database category to frontend category
-  const getFrontendCategory = (dbCategory: string): string => {
-    return categoryMap[dbCategory] || dbCategory.toLowerCase(); 
-  };
 
   // Filter items based on selected category
   const filteredItems = selectedCategory === 'all' 
     ? menuItems 
     : menuItems.filter(item => getFrontendCategory(item.category) === selectedCategory);
 
-  const handleAddToCart = (item: MenuItem) => {
+  const handleAddToCart = (item: typeof menuItems[0]) => {
     addItem({
       id: item.id,
       name: item.name,
       description: item.description,
       price: parseFloat(item.price),
-      imageUrl: getImageUrl(item),
+      imageUrl: item.imageUrl,
       category: getFrontendCategory(item.category),
     });
   };
-
-  // --- RENDERING STATES ---
-
-  // Loading state
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-cream">
-        <MenuHero />
-        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto"></div>
-          <p className="mt-4 text-charcoal">Loading menu items...</p>
-        </div>
-      </main>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <main className="min-h-screen bg-cream">
-        <MenuHero />
-        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-          <p className="text-red-500 mb-4">Error: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-gold text-forest px-6 py-2 rounded-full font-semibold hover:bg-gold-light transition"
-          >
-            Retry
-          </button>
-        </div>
-      </main>
-    );
-  }
-
-  // --- MAIN RENDER ---
 
   return (
     <main className="min-h-screen bg-cream">
@@ -254,7 +189,7 @@ export default function MenuPage() {
                   </div>
 
                   <Image
-                    src={getImageUrl(item)}
+                    src={item.imageUrl}
                     alt={`${item.name} - Ubuntu Garden Lounge`}
                     fill
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -297,14 +232,6 @@ export default function MenuPage() {
         ) : (
           <div className="text-center py-12">
             <p className="text-charcoal-light text-lg">No items found in this category</p>
-          </div>
-        )}
-
-        {/* Show message if no items at all */}
-        {menuItems.length === 0 && !loading && !error && (
-          <div className="text-center py-12">
-            <p className="text-charcoal-light text-lg mb-4">No menu items available</p>
-            <p className="text-charcoal-light text-sm">Check back soon or contact us for today's specials</p>
           </div>
         )}
       </div>

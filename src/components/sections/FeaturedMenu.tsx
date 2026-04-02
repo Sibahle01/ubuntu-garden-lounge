@@ -1,4 +1,4 @@
-// src/components/sections/FeaturedMenu.tsx - ANDROID SCROLLING FIXED
+// src/components/sections/FeaturedMenu.tsx - WORKING VERSION
 'use client';
 
 import { motion } from 'framer-motion';
@@ -191,7 +191,7 @@ export default function FeaturedMenu() {
               </button>
             </div>
 
-            {/* Mobile Horizontal Scroll - FIXED FOR ANDROID (no negative margins) */}
+            {/* Mobile Horizontal Scroll - FIXED FOR ANDROID */}
             <div className="md:hidden overflow-x-auto pb-2">
               <div className="flex gap-3 min-w-min px-4">
                 {categories.map((cat, index) => (
@@ -251,7 +251,7 @@ export default function FeaturedMenu() {
                 </button>
               </div>
 
-              {/* Mobile Horizontal Scroll - FIXED FOR ANDROID (no negative margins) */}
+              {/* Mobile Horizontal Scroll - FIXED FOR ANDROID */}
               <div className="md:hidden overflow-x-auto pb-4">
                 <div className="flex gap-4 min-w-min px-4">
                   {featuredItems.map((item) => (
