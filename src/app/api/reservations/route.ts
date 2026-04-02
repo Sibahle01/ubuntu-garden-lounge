@@ -1,6 +1,7 @@
 // src/app/api/reservations/route.ts
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendReservationConfirmation } from '@/lib/email.service';
 
 export async function GET() {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
-    // 1. Validate required fields: Added 'time' to validation
+    // 1. Validate required fields
     if (!data.customerName || !data.customerEmail || !data.reservationDate || !data.partySize || !data.time) {
       return NextResponse.json(
         { error: 'Missing required fields (name, email, date, time, party size)' },
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     const partySizeInt = parseInt(data.partySize)
-    
+
     // 2. Validate party size
     if (isNaN(partySizeInt) || partySizeInt < 1 || partySizeInt > 20) {
       return NextResponse.json(
@@ -44,20 +45,28 @@ export async function POST(request: NextRequest) {
         customerName: data.customerName,
         customerEmail: data.customerEmail,
         customerPhone: data.customerPhone || null,
-        // Convert date string to JavaScript Date object for DateTime field
         reservationDate: new Date(data.reservationDate),
-        time: data.time, // Mapped to the 'time' field in Prisma schema
-        partySize: partySizeInt, // Use the parsed integer
+        time: data.time,
+        partySize: partySizeInt,
         specialRequests: data.specialRequests || null,
-        // Use 'PENDING' to match the schema default
-        status: data.status || 'PENDING' 
+        status: data.status || 'PENDING'
       }
     })
+
+    // 🆕 SEND EMAIL CONFIRMATION (background - won't block response)
+    sendReservationConfirmation({
+      customerName: reservation.customerName,
+      customerEmail: reservation.customerEmail,
+      reservationId: reservation.id,
+      date: reservation.reservationDate,
+      time: reservation.time,
+      guests: reservation.partySize,
+      specialRequests: reservation.specialRequests || undefined,
+    }).catch(err => console.error('Background email failed:', err));
 
     return NextResponse.json(reservation, { status: 201 })
   } catch (error) {
     console.error('Error creating reservation:', error)
-    // You might want to check for unique constraint violations (e.g., if you added a unique constraint on time/date/etc.)
     return NextResponse.json(
       { error: 'Failed to create reservation' },
       { status: 500 }

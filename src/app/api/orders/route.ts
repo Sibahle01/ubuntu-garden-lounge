@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendOrderConfirmation } from '@/lib/email.service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    
+
     // Validate required fields
     if (!data.orderNumber || !data.orderType || !data.name || !data.email || !data.phone) {
       return NextResponse.json(
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const order = await prisma.order.create({
       data: {
         orderNumber: data.orderNumber,
@@ -73,7 +74,25 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-    
+
+    // 🆕 SEND EMAIL CONFIRMATION (don't await - let it run in background)
+    // This won't block the response if it fails
+    sendOrderConfirmation({
+      customerName: order.name,
+      customerEmail: order.email,
+      orderNumber: order.orderNumber,
+      items: order.items.map(item => ({
+        name: item.menuItem.name,
+        quantity: item.quantity,
+        price: Number(item.price),
+      })),
+      subtotal: Number(order.subtotal),
+      tax: Number(order.tax),
+      total: Number(order.total),
+      orderType: order.orderType as 'dine-in' | 'pickup',
+      specialRequests: order.specialRequests || undefined,
+    }).catch(err => console.error('Background email failed:', err));
+
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
     console.error('Error creating order:', error);

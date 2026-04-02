@@ -131,3 +131,19 @@
     @apply bg-gold/50;
   }
 }
+
+/* Fix for disappearing flex items on some mobile browsers */
+.flex-shrink-0 {
+  flex-shrink: 0 !important;
+}
+
+/* Ensure horizontal scroll containers show all items */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Force all category buttons to render */
+.overflow-x-auto .flex {
+  min-width: 100%;
+}
