@@ -1,4 +1,4 @@
-﻿// src/app/admin/menu/new/page.tsx
+// src/app/admin/menu/new/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -71,9 +71,9 @@ export default function NewMenuItemPage() {
       // Upload image if provided
       if (imageFile) {
         const formDataImage = new FormData()
-        formDataImage.append('image', imageFile)
+        formDataImage.append('file', imageFile); formDataImage.append('type', 'menu')
         
-        const uploadResponse = await fetch('/api/admin/upload', {
+        const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
           body: formDataImage
         })

@@ -1,39 +1,44 @@
-// src/app/about/page.tsx
+﻿// src/app/about/page.tsx - WITH MAP AND TEAM IMAGES
 'use client';
 
 import { motion } from 'framer-motion';
 import { Users, Heart, Leaf, Trophy, Star, MapPin, Globe, Award, ChefHat } from 'lucide-react';
 import { KentePattern, AdinkraPattern, KubaPattern, MudclothPattern, ZigzagPattern, DiamondPattern } from '@/components/patterns/AfricanPatterns';
+import Image from 'next/image';
 
-// Team data - fictional but authentic
+// Team data with Unsplash images (free, high-quality)
 const teamMembers = [
   {
     name: 'Khethiwe Khuzwayo',
     role: 'Founder & Head Chef',
     bio: 'Born in KwaZulu-Natal with 15 years of culinary expertise. Passionate about modernizing traditional African recipes.',
     expertise: ['Zulu Cuisine', 'African Fusion', 'Sustainable Cooking'],
-    years: 15
+    years: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1583394293214-28ded15ee548?w=400&h=400&fit=crop'
   },
   {
     name: 'Amahle Ndlovu',
     role: 'Restaurant Manager',
     bio: 'Hospitality expert ensuring every guest experiences genuine Ubuntu hospitality.',
     expertise: ['Guest Experience', 'Wine Pairing', 'Events'],
-    years: 8
+    years: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
   },
   {
     name: 'Sipho Dlamini',
     role: 'Master Chef',
     bio: 'Specializes in contemporary dishes that honor African heritage with modern techniques.',
     expertise: ['Contemporary African', 'Plant-Based', 'Spice Blending'],
-    years: 12
+    years: 12,
+    imageUrl: 'https://images.unsplash.com/photo-1556911261-6bd341186b2f?w=400&h=400&fit=crop'
   },
   {
     name: 'Thandi Mbeki',
     role: 'Cultural Curator',
     bio: 'Researches cultural elements to create authentic African ambiance and storytelling.',
     expertise: ['African Art', 'Storytelling', 'Traditional Music'],
-    years: 10
+    years: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop'
   }
 ];
 
@@ -48,7 +53,7 @@ const values = [
   {
     icon: <Leaf className="w-5 h-5 sm:w-6 sm:h-6" />,
     title: 'Sustainability',
-    description: 'Source locally, support farmers, honor the earth.',
+    description: 'Source locally, honor the earth.',
     color: 'bg-gold/10 text-gold-dark'
   },
   {
@@ -68,7 +73,7 @@ const values = [
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-cream">
-      {/* Hero Section starts immediately under navbar */}
+      {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-b from-forest-dark to-forest text-white pt-20 pb-12 sm:py-16 md:py-20">
         <div className="absolute inset-0 opacity-10">
           <KentePattern className="w-full h-full text-white" />
@@ -105,7 +110,7 @@ export default function AboutPage() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         
-        {/* Our Story Section - Stack on mobile */}
+        {/* Our Story Section with Map */}
         <section className="mb-12 sm:mb-16 md:mb-20">
           <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12 items-center">
             <motion.div
@@ -152,35 +157,30 @@ export default function AboutPage() {
               </div>
             </motion.div>
             
+            {/* Map Embed - Google Maps */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               className="w-full order-1 lg:order-2"
             >
-              {/* Location Card - Mobile Optimized */}
-              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl aspect-square sm:aspect-[4/3] md:aspect-square">
-                <div className="absolute inset-0 bg-gradient-to-br from-forest-dark via-forest to-gold/20" />
-                
-                <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-                  <div className="text-center text-white max-w-sm">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                      <MapPin className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-gold" />
-                    </div>
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">Our Home</h3>
-                    <p className="text-sm sm:text-base md:text-lg mb-3 sm:mb-4">Madadeni, Newcastle</p>
-                    <div className="inline-flex items-center gap-2 bg-black/30 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm">
-                      <span className="text-gold">📍</span>
-                      <span>Section 5, Hospital Road</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl aspect-square sm:aspect-[4/3] md:aspect-square bg-forest/10">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14111.825439726065!2d29.8786105!3d-27.7587069!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ef71721ae1f66cb%3A0xddad85a01a445cdb!2sMadadeni%2C%20Newcastle%2C%20South%20Africa!5e0!3m2!1sen!2s!4v1743718000000!5m2!1sen!2s"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Ubuntu Garden Lounge Location"
+                ></iframe>
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Values Section - Mobile Grid */}
+        {/* Values Section */}
         <section className="mb-12 sm:mb-16 md:mb-20">
           <div className="text-center mb-8 sm:mb-12">
             <div className="flex justify-center mb-3 sm:mb-4">
@@ -216,7 +216,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Stats Section - Mobile Grid */}
+        {/* Stats Section */}
         <section className="mb-12 sm:mb-16 md:mb-20">
           <div className="bg-gradient-to-r from-forest/10 to-gold/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10">
             <div className="text-center mb-8 sm:mb-10">
@@ -247,7 +247,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Team Section - Final Section */}
+        {/* Team Section with Images */}
         <section>
           <div className="text-center mb-8 sm:mb-12">
             <div className="flex justify-center mb-3 sm:mb-6">
@@ -272,8 +272,15 @@ export default function AboutPage() {
                 className="group"
               >
                 <div className="bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
-                  {/* Header */}
-                  <div className="h-28 sm:h-32 md:h-36 bg-gradient-to-r from-forest to-forest-dark relative">
+                  {/* Image Container */}
+                  <div className="relative aspect-square overflow-hidden bg-gradient-to-r from-forest to-forest-dark">
+                    <Image
+                      src={member.imageUrl}
+                      alt={member.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                    />
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
                       <div className="bg-gold text-forest px-2 py-1 rounded-full text-xs sm:text-sm font-bold">
                         {member.years} yrs
@@ -288,7 +295,7 @@ export default function AboutPage() {
                   <div className="p-3 sm:p-4 md:p-6">
                     <h3 className="text-base sm:text-lg font-bold text-forest mb-1">{member.name}</h3>
                     <p className="text-sm text-gold font-medium mb-2 sm:mb-3">{member.role}</p>
-                    <p className="text-xs sm:text-sm text-charcoal-light mb-3 sm:mb-4 leading-relaxed">{member.bio}</p>
+                    <p className="text-xs sm:text-sm text-charcoal-light mb-3 sm:mb-4 leading-relaxed line-clamp-3">{member.bio}</p>
                     
                     {/* Expertise */}
                     <div className="space-y-1 sm:space-y-2">

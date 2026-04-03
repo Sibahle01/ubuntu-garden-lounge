@@ -1,4 +1,4 @@
-// src/components/sections/FeaturedMenu.tsx - WORKING VERSION
+// src/components/sections/FeaturedMenu.tsx - Horizontal scroll fixed for Android
 'use client';
 
 import { motion } from 'framer-motion';
@@ -191,9 +191,9 @@ export default function FeaturedMenu() {
               </button>
             </div>
 
-            {/* Mobile Horizontal Scroll - FIXED FOR ANDROID */}
+            {/* Mobile Horizontal Scroll - No negative margins, padding on inner div */}
             <div className="md:hidden overflow-x-auto pb-2">
-              <div className="flex gap-3 min-w-min px-4">
+              <div className="flex gap-3 px-4" style={{ minWidth: 'max-content' }}>
                 {categories.map((cat, index) => (
                   <button
                     key={cat.name}
@@ -205,7 +205,7 @@ export default function FeaturedMenu() {
                     </div>
                     <div className="text-sm font-semibold text-forest text-center">{cat.name}</div>
                     <div className="text-xs text-charcoal-light text-center">
-                      {categoryCount[cat.id] || 0} items
+                      {categoryCount[cat.id] !== undefined ? `${categoryCount[cat.id]} items` : '0 items'}
                     </div>
                   </button>
                 ))}
@@ -232,7 +232,7 @@ export default function FeaturedMenu() {
             </div>
           </div>
 
-          {/* Featured Items Section */}
+          {/* Featured Items Section - keep horizontal scroll as before */}
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto"></div>
@@ -251,9 +251,9 @@ export default function FeaturedMenu() {
                 </button>
               </div>
 
-              {/* Mobile Horizontal Scroll - FIXED FOR ANDROID */}
+              {/* Mobile Horizontal Scroll - No negative margins */}
               <div className="md:hidden overflow-x-auto pb-4">
-                <div className="flex gap-4 min-w-min px-4">
+                <div className="flex gap-4 px-4" style={{ minWidth: 'max-content' }}>
                   {featuredItems.map((item) => (
                     <div
                       key={item.id}
